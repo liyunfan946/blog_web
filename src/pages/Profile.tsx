@@ -1,126 +1,143 @@
 import React, { useState } from 'react';
 import {
   Container,
-  Paper,
-  TextField,
-  Button,
   Typography,
   Box,
   Avatar,
-  Grid,
+  Button,
+  TextField,
+  Paper,
+  Divider,
+  CircularProgress,
 } from '@mui/material';
-import { CloudUpload } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 
-const Profile = () => {
-  const [formData, setFormData] = useState({
-    username: '示例用户',
-    email: 'example@example.com',
-    bio: '这是一段个人简介...',
-  });
-  const [avatar, setAvatar] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatar(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+const Profile: React.FC = () => {
+  const { user, updateProfile, updateAvatar } = useAuth();
+  const [username, setUsername] = useState(user?.username || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 实现更新个人资料逻辑
-    console.log('更新信息：', { ...formData, avatar });
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await updateProfile({ username, bio });
+      setSuccess('个人资料更新成功');
+    } catch (err) {
+      setError('更新失败');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await updateAvatar(file);
+      setSuccess('头像更新成功');
+    } catch (err) {
+      setError('头像更新失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <Container>
+        <Typography>请先登录</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={3} className="p-8 bg-gray-800">
-        <Typography variant="h4" component="h1" gutterBottom className="text-white">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
           个人资料
         </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
-              <Box display="flex" flexDirection="column" alignItems="center">
-                <Avatar
-                  src={avatarPreview}
-                  sx={{ width: 150, height: 150, mb: 2 }}
-                  className="bg-gray-700"
-                />
-                <Button
-                  component="label"
-                  variant="outlined"
-                  startIcon={<CloudUpload />}
-                  className="text-white"
-                >
-                  更换头像
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                  />
-                </Button>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={8}>
-              <TextField
-                fullWidth
-                label="用户名"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                margin="normal"
-                required
-                className="bg-gray-700"
+
+        <Paper sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+            <Avatar
+              src={user.avatar}
+              alt={user.username}
+              sx={{ width: 100, height: 100, mb: 2 }}
+            />
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={loading}
+            >
+              更换头像
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleAvatarChange}
               />
-              <TextField
-                fullWidth
-                label="邮箱"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                margin="normal"
-                required
-                className="bg-gray-700"
-              />
-              <TextField
-                fullWidth
-                label="个人简介"
-                name="bio"
-                multiline
-                rows={4}
-                value={formData.bio}
-                onChange={handleChange}
-                margin="normal"
-                className="bg-gray-700"
-              />
+            </Button>
+          </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Box component="form" onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="用户名"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              margin="normal"
+            />
+
+            <TextField
+              fullWidth
+              label="个人简介"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              margin="normal"
+              multiline
+              rows={4}
+            />
+
+            {error && (
+              <Typography color="error" sx={{ mt: 2 }}>
+                {error}
+              </Typography>
+            )}
+
+            {success && (
+              <Typography color="success.main" sx={{ mt: 2 }}>
+                {success}
+              </Typography>
+            )}
+
+            <Box sx={{ mt: 3 }}>
               <Button
                 type="submit"
                 variant="contained"
-                color="primary"
-                className="mt-4"
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} /> : null}
               >
                 保存修改
               </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     </Container>
   );
 };

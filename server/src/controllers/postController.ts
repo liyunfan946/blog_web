@@ -85,7 +85,7 @@ export const deletePost = async (req: Request, res: Response) => {
       return res.status(403).json({ message: '没有权限删除此文章' });
     }
 
-    await post.remove();
+    await Post.findByIdAndDelete(req.params.id);
     res.json({ message: '文章已删除' });
   } catch (error) {
     res.status(500).json({ message: '服务器错误' });
@@ -126,6 +126,7 @@ export const addComment = async (req: Request, res: Response) => {
     post.comments.push({
       user: req.user._id,
       content,
+      createdAt: new Date()
     });
 
     await post.save();

@@ -2,129 +2,125 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
-  Paper,
-  TextField,
-  Button,
   Typography,
   Box,
+  TextField,
+  Button,
+  Paper,
+  CircularProgress,
 } from '@mui/material';
 import { postApi } from '../services/api';
-
-interface Post {
-  title: string;
-  content: string;
-  excerpt: string;
-  image: string;
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const CreatePost: React.FC = () => {
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post>({
-    title: '',
-    content: '',
-    excerpt: '',
-    image: '',
-  });
-  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [image, setImage] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setPost((prev) => ({ ...prev, [name]: value }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
-      setError('');
-      setSaving(true);
-      const response = await postApi.createPost(post);
-      navigate(`/post/${response.data._id}`);
+      await postApi.createPost({
+        title,
+        content,
+        excerpt,
+        image,
+      });
+      navigate('/');
     } catch (err) {
-      setError('创建文章失败');
+      setError('发布文章失败');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: 4 }}>
+      <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          写文章
+          发布新文章
         </Typography>
 
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
-            {error}
-          </Typography>
-        )}
+        <Paper sx={{ p: 3 }}>
+          <Box component="form" onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="标题"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              margin="normal"
+            />
 
-        <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="标题"
-            name="title"
-            value={post.title}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
+            <TextField
+              fullWidth
+              label="摘要"
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              required
+              margin="normal"
+              multiline
+              rows={2}
+            />
 
-          <TextField
-            fullWidth
-            label="摘要"
-            name="excerpt"
-            value={post.excerpt}
-            onChange={handleChange}
-            margin="normal"
-            multiline
-            rows={2}
-            required
-          />
+            <TextField
+              fullWidth
+              label="封面图片URL"
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+              required
+              margin="normal"
+            />
 
-          <TextField
-            fullWidth
-            label="封面图片URL"
-            name="image"
-            value={post.image}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
+            <TextField
+              fullWidth
+              label="内容"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              margin="normal"
+              multiline
+              rows={10}
+            />
 
-          <TextField
-            fullWidth
-            label="内容"
-            name="content"
-            value={post.content}
-            onChange={handleChange}
-            margin="normal"
-            multiline
-            rows={10}
-            required
-          />
+            {error && (
+              <Typography color="error" sx={{ mt: 2 }}>
+                {error}
+              </Typography>
+            )}
 
-          <Box display="flex" gap={2} mt={3}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={saving}
-            >
-              {saving ? '发布中...' : '发布'}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/')}
-            >
-              取消
-            </Button>
+            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} /> : null}
+              >
+                发布
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/')}
+              >
+                取消
+              </Button>
+            </Box>
           </Box>
-        </form>
-      </Paper>
+        </Paper>
+      </Box>
     </Container>
   );
 };

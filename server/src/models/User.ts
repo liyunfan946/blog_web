@@ -1,16 +1,18 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   username: string;
   email: string;
   password: string;
-  avatar?: string;
-  bio?: string;
+  avatar: string;
+  bio: string;
+  createdAt: Date;
+  updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
   username: {
     type: String,
     required: true,
@@ -30,11 +32,11 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: '',
+    default: 'https://api.dicebear.com/7.x/avataaars/svg',  // 使用 DiceBear API 生成默认头像
   },
   bio: {
     type: String,
-    default: '',
+    default: '这个人很懒，什么都没有写。',
   },
 }, {
   timestamps: true,
@@ -55,7 +57,11 @@ userSchema.pre('save', async function(next) {
 
 // 密码比较方法
 userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw error;
+  }
 };
 
 export default mongoose.model<IUser>('User', userSchema); 

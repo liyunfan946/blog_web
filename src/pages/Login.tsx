@@ -1,89 +1,105 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
-  Paper,
+  Box,
   TextField,
   Button,
   Typography,
-  Box,
   Link,
+  Paper,
+  Alert,
 } from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
 
-const Login = () => {
+const Login: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 实现登录逻辑
-    console.log('登录信息：', formData);
-    navigate('/');
+    try {
+      setError('');
+      setLoading(true);
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      setError('登录失败，请检查邮箱和密码');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={3} className="p-8 bg-gray-800">
-        <Typography variant="h4" component="h1" gutterBottom className="text-white">
-          登录
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="邮箱"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            margin="normal"
-            required
-            className="bg-gray-700"
-          />
-          <TextField
-            fullWidth
-            label="密码"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            margin="normal"
-            required
-            className="bg-gray-700"
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            className="mt-6"
-          >
+      <Box sx={{ mt: 8 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            backgroundColor: 'background.paper',
+          }}
+        >
+          <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
             登录
-          </Button>
-        </form>
-        <Box mt={2} textAlign="center">
-          <Typography variant="body2" className="text-gray-400">
-            还没有账号？
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate('/register')}
-              className="text-blue-400 ml-1"
-            >
-              立即注册
-            </Link>
           </Typography>
-        </Box>
-      </Paper>
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="邮箱地址"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="密码"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
+            >
+              {loading ? '登录中...' : '登录'}
+            </Button>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                还没有账号？{' '}
+                <Link component={RouterLink} to="/register">
+                  立即注册
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     </Container>
   );
 };
